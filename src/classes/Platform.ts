@@ -1,22 +1,23 @@
-import { Canvas } from './Canvas'
+import type { Canvas } from './Canvas'
 
 export class Platform {
     constructor(
-        public coords: {
+        public position: {
             x: number
             y: number
         },
         public width: number,
-        public height: number,
-        private canvas: Canvas
+        public height: number
     ) {}
 
-    private get position(): [number, number, number, number] {
-        return [this.coords.x, this.coords.y, this.width, this.height]
+    public get sides() {
+        return {
+            right: this.position.x + this.width,
+        }
     }
 
-    public draw() {
-        this.canvas.ctx.fillStyle = 'red'
-        this.canvas.ctx.fillRect(...this.position)
+    public draw(canvas: Canvas) {
+        canvas.ctx.fillStyle = 'red'
+        canvas.ctx.fillRect(this.position.x, this.position.y, this.width, this.height)
     }
 }

@@ -1,86 +1,88 @@
-import { Canvas } from './Canvas'
+import type { Canvas } from './Canvas'
+import { Platform } from './Platform'
 
 export class Сharacter {
-    public speed = { x: 15, y: 0 }
-    private gravity = 3
-    private jumpSpeed = 50
-    private movingRight = false
-    private movingLeft = false
+    private width = 50
+    height = 50
+    speed = { x: 10, y: 0 }
+    private maxSpeed = 40
+    private gravity = 2
+    private jumpSpeed = 40
     private canJumping = false
 
     constructor(
-        public coords: {
+        public position: {
             x: number
             y: number
-        },
-        public width: number,
-        public height: number,
-        private canvas: Canvas
+        }
     ) {}
 
-    private get position(): [number, number, number, number] {
-        return [this.coords.x, this.coords.y, this.width, this.height]
+    get sides() {
+        return {
+            bottom: this.position.y + this.height,
+            right: this.position.x + this.width,
+        }
     }
 
-    private draw() {
-        this.canvas.ctx.fillStyle = 'green'
-        this.canvas.ctx.fillRect(...this.position)
+    private draw(canvas: Canvas) {
+        canvas.ctx.fillStyle = 'blue'
+        canvas.ctx.fillRect(this.position.x, this.position.y, this.width, this.height)
     }
 
-    public update() {
-        this.clear()
+    private hasCollisionWithCanvas(canvas: Canvas) {
+        return this.sides.bottom + this.speed.y >= canvas.el.height
+    }
 
-        // gravity
-        const canFalling = this.coords.y + this.height + this.speed.y < this.canvas.el.height
-        this.canJumping = !canFalling
+    private hasCollisionWithPlatform(platform: Platform) {
+        return (
+            this.position.y + this.height <= platform.position.y &&
+            this.sides.bottom + this.speed.y >= platform.position.y &&
+            this.sides.right >= platform.position.x &&
+            this.position.x <= platform.sides.right
+        )
+    }
 
-        if (canFalling) {
-            this.speed.y += this.gravity
-            this.coords.y += this.speed.y
-        } else {
+    update(canvas: Canvas, platforms: Platform[]) {
+        this.clear(canvas)
+        this.draw(canvas)
+        this.displayInfo(canvas)
+
+        this.position.y += this.speed.y
+        this.canJumping = false
+
+        if (this.hasCollisionWithCanvas(canvas)) {
             this.speed.y = 0
-            this.coords.y = this.canvas.el.height - this.height
+            this.position.y = canvas.el.height - this.height
+            this.canJumping = true
+        } else {
+            const newSpeed = this.speed.y + this.gravity
+            this.speed.y = newSpeed > this.maxSpeed ? this.maxSpeed : newSpeed
         }
 
-        // x-axis moving
-        if (this.movingRight && this.coords.x + this.width < this.canvas.el.width) {
-            this.coords.x += this.speed.x
-        }
-
-        if (this.movingLeft && this.coords.x > 0) {
-            this.coords.x -= this.speed.x
-        }
-
-        // display coords
-        this.canvas.ctx.font = '18px Arial'
-        this.canvas.ctx.fillStyle = '#000000'
-        this.canvas.ctx.fillText(`x: ${this.coords.x}`, this.canvas.el.width - 100, 50)
-        this.canvas.ctx.fillText(`y: ${this.coords.y}`, this.canvas.el.width - 100, 70)
-        this.canvas.ctx.fillText(`speed: ${this.speed.y}`, this.canvas.el.width - 100, 90)
-
-        this.draw()
+        platforms.forEach((platform) => {
+            if (this.hasCollisionWithPlatform(platform)) {
+                this.speed.y = 0
+                this.position.y = platform.position.y - this.height
+                this.canJumping = true
+            }
+        })
     }
 
-    private clear() {
-        this.canvas.ctx.clearRect(0, 0, this.canvas.el.width, this.canvas.el.height)
+    private clear(canvas: Canvas) {
+        canvas.ctx.clearRect(0, 0, canvas.el.width, canvas.el.height)
     }
 
-    public moveRight() {
-        this.movingRight = true
-    }
-
-    public moveLeft() {
-        this.movingLeft = true
-    }
-
-    public stopMove() {
-        this.movingLeft = false
-        this.movingRight = false
-    }
-
-    public jump() {
+    jump() {
         if (this.canJumping) {
             this.speed.y -= this.jumpSpeed
         }
+    }
+
+    private displayInfo(canvas: Canvas) {
+        canvas.ctx.font = '18px Arial'
+        canvas.ctx.fillStyle = '#000000'
+        canvas.ctx.fillText(`x: ${this.position.x}`, canvas.el.width - 100, 50)
+        canvas.ctx.fillText(`y: ${this.position.y}`, canvas.el.width - 100, 70)
+        canvas.ctx.fillText(`speed: ${this.speed.y}`, canvas.el.width - 100, 90)
     }
 }

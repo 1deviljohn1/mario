@@ -2,42 +2,65 @@ import './assets/scss/app.scss'
 import { Canvas } from './classes/Canvas'
 import { Platform } from './classes/Platform'
 import { Сharacter } from './classes/Сharacter'
-import { keys } from './types'
+
+const speed = 8
+const leftEdge = 200
+const rightEdge = 700
 
 const canvas = new Canvas('canvas')
-const platform = new Platform({ x: 200, y: 700 }, 300, 50, canvas)
-const сharacter = new Сharacter({ x: 100, y: 100 }, 50, 50, canvas)
+const platforms = [new Platform({ x: 300, y: 600 }, 300, 50), new Platform({ x: 600, y: 400 }, 300, 50)]
+const player = new Сharacter({ x: leftEdge, y: 100 })
+
+const keys = {
+    KeyW: {
+        pressed: false,
+    },
+    KeyD: {
+        pressed: false,
+    },
+    KeyA: {
+        pressed: false,
+    },
+    Space: {
+        pressed: false,
+    },
+}
 
 const animate = () => {
     window.requestAnimationFrame(animate)
-    сharacter.update()
-    platform.draw()
+    player.update(canvas, platforms)
+    platforms.forEach((platform) => {
+        platform.draw(canvas)
+    })
 
-    if (
-        сharacter.coords.y <= platform.coords.y + platform.height &&
-        сharacter.coords.x <= platform.coords.x + platform.width &&
-        сharacter.coords.x >= platform.coords.x
-    ) {
-        сharacter.speed.y = 0
+    if (keys.KeyA.pressed && player.position.x >= leftEdge) {
+        player.position.x -= speed
+    } else if (keys.KeyD.pressed && player.sides.right <= rightEdge) {
+        player.position.x += speed
+    } else {
+        if (keys.KeyA.pressed || keys.KeyD.pressed) {
+            platforms.forEach((platform) => {
+                platform.position.x = keys.KeyA.pressed ? platform.position.x + speed : platform.position.x - speed
+            })
+        }
     }
 }
 
 window.addEventListener('keydown', (event) => {
     switch (event.code) {
-        case keys.KeyUp:
-        case keys.ArrowUp:
-        case keys.SpaceUp:
-            сharacter.jump()
+        case 'KeyW':
+        case 'Space':
+            player.jump()
             break
 
-        case keys.KeyLeft:
-        case keys.ArrowLeft:
-            сharacter.moveLeft()
+        case 'KeyA':
+            keys.KeyA.pressed = true
+            keys.KeyD.pressed = false
             break
 
-        case keys.KeyRight:
-        case keys.ArrowRight:
-            сharacter.moveRight()
+        case 'KeyD':
+            keys.KeyD.pressed = true
+            keys.KeyA.pressed = false
             break
 
         default:
@@ -47,11 +70,12 @@ window.addEventListener('keydown', (event) => {
 
 window.addEventListener('keyup', (event) => {
     switch (event.code) {
-        case keys.KeyLeft:
-        case keys.ArrowLeft:
-        case keys.KeyRight:
-        case keys.ArrowRight:
-            сharacter.stopMove()
+        case 'KeyA':
+            keys.KeyA.pressed = false
+            break
+
+        case 'KeyD':
+            keys.KeyD.pressed = false
             break
 
         default:
