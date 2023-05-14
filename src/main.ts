@@ -1,7 +1,7 @@
 import './assets/scss/app.scss'
 import { Canvas } from './classes/Canvas'
 import { Platform } from './classes/Platform'
-import { Сharacter } from './classes/Сharacter'
+import { Сharacter, type SpriteKey } from './classes/Сharacter'
 import { ImageObject } from './classes/ImageObject'
 
 const speed = 12
@@ -19,6 +19,7 @@ let platforms: Platform[]
 let images: ImageData[]
 let player: Сharacter
 let playerOffset: number
+let lastDirection: SpriteKey | null = null
 
 const keys = {
     KeyW: {
@@ -81,7 +82,7 @@ function animate() {
 
 function init() {
     playerOffset = 0
-    player = new Сharacter({ x: leftEdge, y: 100 })
+    player = new Сharacter({ x: leftEdge, y: 100 }, lastDirection)
 
     platforms = [
         new Platform({ x: platformWidth * 4 - 290, y: 590 }, './img/platformSmallTall.png'),
@@ -116,11 +117,15 @@ window.addEventListener('keydown', (event) => {
             break
 
         case 'KeyA':
+            player.setCurrentSprite('runLeft')
+            lastDirection = 'runLeft'
             keys.KeyA.pressed = true
             keys.KeyD.pressed = false
             break
 
         case 'KeyD':
+            player.setCurrentSprite('runRight')
+            lastDirection = 'runRight'
             keys.KeyD.pressed = true
             keys.KeyA.pressed = false
             break
@@ -133,10 +138,14 @@ window.addEventListener('keydown', (event) => {
 window.addEventListener('keyup', (event) => {
     switch (event.code) {
         case 'KeyA':
+            player.setCurrentSprite('idleLeft')
+            lastDirection = null
             keys.KeyA.pressed = false
             break
 
         case 'KeyD':
+            player.setCurrentSprite('idleRight')
+            lastDirection = null
             keys.KeyD.pressed = false
             break
 

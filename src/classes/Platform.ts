@@ -1,4 +1,7 @@
 export class Platform {
+    private image: HTMLImageElement
+    public width = 0
+
     constructor(
         public position: {
             x: number
@@ -12,10 +15,6 @@ export class Platform {
             this.width = this.image.width
         }
     }
-
-    private image: HTMLImageElement
-
-    public width = 0
 
     public get sides() {
         return {
