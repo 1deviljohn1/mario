@@ -1,13 +1,12 @@
 import './assets/scss/app.scss'
 import { Canvas } from './classes/Canvas'
 import { Platform } from './classes/Platform'
+import { PlatformSmallTall } from './classes/PlatformSmallTall'
 import { Сharacter, type SpriteKey } from './classes/Сharacter'
 import { ImageObject } from './classes/ImageObject'
 
 const speed = 12
-const leftEdge = 200
-const rightEdge = 700
-const platformWidth = 578
+const rightEdge = window.innerWidth * 0.4
 
 type ImageData = {
     image: ImageObject
@@ -50,28 +49,28 @@ function animate() {
 
     player.update(canvas, platforms)
 
-    if (keys.KeyA.pressed && player.position.x >= leftEdge) {
+    if (keys.KeyA.pressed && playerOffset === 0 && player.position.x > 0) {
         player.position.x -= speed
     } else if (keys.KeyD.pressed && player.sides.right <= rightEdge) {
         player.position.x += speed
     } else {
         if (playerOffset === 0 && keys.KeyA.pressed) {
             return
-        } else {
-            if (keys.KeyA.pressed || keys.KeyD.pressed) {
-                keys.KeyA.pressed ? playerOffset-- : playerOffset++
+        }
 
-                platforms.forEach((platform) => {
-                    platform.position.x = keys.KeyA.pressed ? platform.position.x + speed : platform.position.x - speed
-                })
+        if (keys.KeyA.pressed || keys.KeyD.pressed) {
+            keys.KeyA.pressed ? playerOffset-- : playerOffset++
 
-                images.forEach((item) => {
-                    const coord = item.image.position.x
-                    const speed = item.speed
+            platforms.forEach((platform) => {
+                platform.xCoord = keys.KeyA.pressed ? platform.xCoord + speed : platform.xCoord - speed
+            })
 
-                    item.image.position.x = keys.KeyA.pressed ? coord + speed : coord - speed
-                })
-            }
+            images.forEach((item) => {
+                const coord = item.image.position.x
+                const speed = item.speed
+
+                item.image.position.x = keys.KeyA.pressed ? coord + speed : coord - speed
+            })
         }
     }
 
@@ -82,15 +81,15 @@ function animate() {
 
 function init() {
     playerOffset = 0
-    player = new Сharacter({ x: leftEdge, y: 100 }, lastDirection)
+    player = new Сharacter({ x: 100, y: 100 }, lastDirection)
 
     platforms = [
-        new Platform({ x: platformWidth * 4 - 290, y: 590 }, './img/platformSmallTall.png'),
-        new Platform({ x: 0, y: 804 }, './img/platform.png'),
-        new Platform({ x: platformWidth, y: 804 }, './img/platform.png'),
-        new Platform({ x: platformWidth * 2 + 200, y: 804 }, './img/platform.png'),
-        new Platform({ x: platformWidth * 3, y: 804 }, './img/platform.png'),
-        new Platform({ x: platformWidth * 5 - 30, y: 804 }, './img/platform.png'),
+        new PlatformSmallTall(Platform.width * 4 - 290),
+        new Platform(0),
+        new Platform(Platform.width),
+        new Platform(Platform.width * 2 + 200),
+        new Platform(Platform.width * 3),
+        new Platform(Platform.width * 5 - 30),
     ]
 
     images = [
@@ -103,7 +102,7 @@ function init() {
             speed: 2,
         },
         {
-            image: new ImageObject({ x: 0, y: 350 }, './img/hills.png'),
+            image: new ImageObject({ x: 0, y: canvas.el.height - 580 }, './img/hills.png'),
             speed: 5,
         },
     ]

@@ -1,28 +1,22 @@
 export class Platform {
-    private image: HTMLImageElement
-    public width = 0
+    protected image: HTMLImageElement
+    protected imageSrc = './img/platform.png'
+    static width = 578
+    protected static height = 125
 
-    constructor(
-        public position: {
-            x: number
-            y: number
-        },
-        public imageSrc: string
-    ) {
+    constructor(public xCoord: number) {
         this.image = new Image()
         this.image.src = this.imageSrc
-        this.image.onload = () => {
-            this.width = this.image.width
-        }
     }
 
-    public get sides() {
+    get sides() {
         return {
-            right: this.position.x + this.width,
+            right: this.xCoord + Platform.width,
+            top: window.innerHeight - Platform.height,
         }
     }
 
-    public draw(ctx: CanvasRenderingContext2D) {
-        ctx.drawImage(this.image, this.position.x, this.position.y)
+    draw(ctx: CanvasRenderingContext2D) {
+        ctx.drawImage(this.image, this.xCoord, this.sides.top)
     }
 }

@@ -100,9 +100,9 @@ export class Сharacter {
 
     private hasCollisionWithPlatform(platform: Platform) {
         return (
-            this.position.y + this.height <= platform.position.y &&
-            this.sides.bottom + this.speed >= platform.position.y &&
-            this.sides.right - this.currentSprite.cropOffset >= platform.position.x &&
+            this.position.y + this.height <= platform.sides.top &&
+            this.sides.bottom + this.speed >= platform.sides.top &&
+            this.sides.right - this.currentSprite.cropOffset >= platform.xCoord &&
             this.position.x + this.currentSprite.cropOffset <= platform.sides.right
         )
     }
@@ -119,7 +119,7 @@ export class Сharacter {
         platforms.forEach((platform) => {
             if (this.hasCollisionWithPlatform(platform)) {
                 this.speed = 0
-                this.position.y = platform.position.y - this.height
+                this.position.y = platform.sides.top - this.height
                 this.canJumping = true
             }
         })
