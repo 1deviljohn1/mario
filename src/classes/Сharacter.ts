@@ -1,5 +1,4 @@
 import type { Canvas } from './Canvas'
-import { Platform } from './Platform'
 
 export type SpriteKey = 'idleRight' | 'idleLeft' | 'runRight' | 'runLeft'
 type Sprite = {
@@ -41,10 +40,10 @@ export class Сharacter {
     speed = 0
     private maxSpeed = 40
     private gravity = 2
-    private jumpSpeed = 40
-    private canJumping = false
-    private currrentFrame = 0
-    private currentSprite: Sprite = this.sprites['idleRight']
+    jumpSpeed = 35
+    canJumping = false
+    private currentFrame = 0
+    currentSprite: Sprite = this.sprites['idleRight']
     private currentSpriteKey: SpriteKey | null = null
     private image: HTMLImageElement
 
@@ -73,16 +72,22 @@ export class Сharacter {
 
         this.currentSprite = this.sprites[sprite]
         this.currentSpriteKey = sprite
-        this.currrentFrame = 0
+        this.currentFrame = 0
         this.image.src = this.currentSprite.src
     }
 
     private draw(canvas: Canvas) {
         const cropWidth = this.image.width / this.currentSprite.frames
 
+        this.currentFrame++
+
+        if (this.currentFrame === this.currentSprite.frames) {
+            this.currentFrame = 0
+        }
+
         canvas.ctx.drawImage(
             this.image,
-            cropWidth * this.currrentFrame,
+            cropWidth * this.currentFrame,
             0,
             cropWidth,
             this.image.height,
@@ -91,43 +96,19 @@ export class Сharacter {
             this.currentSprite.cropWidth,
             this.height
         )
-
-        this.currrentFrame++
-        if (this.currrentFrame === this.currentSprite.frames - 1) {
-            this.currrentFrame = 0
-        }
     }
 
-    private hasCollisionWithPlatform(platform: Platform) {
-        return (
-            this.position.y + this.height <= platform.sides.top &&
-            this.sides.bottom + this.speed >= platform.sides.top &&
-            this.sides.right - this.currentSprite.cropOffset >= platform.xCoord &&
-            this.position.x + this.currentSprite.cropOffset <= platform.sides.right
-        )
-    }
-
-    update(canvas: Canvas, platforms: Platform[]) {
+    update(canvas: Canvas) {
         this.draw(canvas)
 
         this.position.y += this.speed
-        this.canJumping = false
-
         const newSpeed = this.speed + this.gravity
         this.speed = newSpeed > this.maxSpeed ? this.maxSpeed : newSpeed
-
-        platforms.forEach((platform) => {
-            if (this.hasCollisionWithPlatform(platform)) {
-                this.speed = 0
-                this.position.y = platform.sides.top - this.height
-                this.canJumping = true
-            }
-        })
     }
 
     jump() {
         if (this.canJumping) {
-            this.speed -= this.jumpSpeed
+            this.speed = -this.jumpSpeed
         }
     }
 }
