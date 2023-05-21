@@ -16,6 +16,7 @@ export class PlatformSmallTall extends Platform {
     get sides() {
         return {
             right: this.position.x + this.width,
+            bottom: this.position.y + this.height,
         }
     }
 }

@@ -6,9 +6,7 @@ import { Сharacter, type SpriteKey } from './classes/Сharacter'
 import { ImageObject } from './classes/ImageObject'
 import { Goomba } from './classes/Goomba'
 import { topCollision, horizontalCollision } from './utils/collision'
-
-const speed = 12
-const rightEdge = window.innerWidth * 0.4
+import { Particle } from './classes/Particle'
 
 type ImageData = {
     image: ImageObject
@@ -16,173 +14,237 @@ type ImageData = {
 }
 
 const canvas = new Canvas('canvas')
-let platforms: Platform[]
-let environment: ImageData[]
-let goombas: Goomba[]
-let player: Сharacter
-let playerOffset: number
-let lastDirection: SpriteKey | null = null
 
-const keys = {
-    KeyW: {
-        pressed: false,
-    },
-    KeyD: {
-        pressed: false,
-    },
-    KeyA: {
-        pressed: false,
-    },
-    Space: {
-        pressed: false,
-    },
-}
+class App {
+    private speed = 10
+    private playerOffset = 0
+    private particlesNumber = 50
+    private rightEdge = window.innerWidth * 0.4
+    private platforms: Platform[] = []
+    private environment: ImageData[] = []
+    private goombas: Goomba[] = []
+    private particles: Particle[] = []
+    private lastDirection: SpriteKey | null = null
+    private player = new Сharacter({ x: 100, y: 100 }, this.lastDirection)
+    private keys = {
+        KeyW: {
+            pressed: false,
+        },
+        KeyD: {
+            pressed: false,
+        },
+        KeyA: {
+            pressed: false,
+        },
+        Space: {
+            pressed: false,
+        },
+    }
 
-function animate() {
-    canvas.ctx.clearRect(0, 0, canvas.el.width, canvas.el.height)
-    window.requestAnimationFrame(animate)
+    init() {
+        this.playerOffset = 0
+        this.player = new Сharacter({ x: 100, y: 100 }, this.lastDirection)
 
-    player.canJumping = false
+        this.platforms = [
+            new PlatformSmallTall(Platform.width * 4 - 90),
+            new Platform(0),
+            new Platform(Platform.width),
+            new Platform(Platform.width * 2 + 200),
+            new Platform(Platform.width * 3 + 200),
+            new Platform(Platform.width * 5 + 100),
+        ]
 
-    environment.forEach((item) => {
-        item.image.draw(canvas.ctx)
-    })
+        this.environment = [
+            { image: new ImageObject({ x: -1, y: -1 }, './img/background.png'), speed: 2 },
+            { image: new ImageObject({ x: -1, y: 500 }, './img/background.png'), speed: 2 },
+            { image: new ImageObject({ x: 0, y: canvas.el.height - 580 }, './img/hills.png'), speed: 5 },
+        ]
 
-    platforms.forEach((platform) => {
-        platform.draw(canvas.ctx)
+        this.goombas = [new Goomba({ x: 2000, y: 200 }, 600), new Goomba({ x: 2450, y: 500 }, 200)]
+    }
 
-        if (topCollision(player, platform, player.currentSprite.cropOffset)) {
-            player.canJumping = true
-            player.speed = 0
-            player.position.y = platform.position.y - player.height
+    private handleScroll() {
+        if (this.keys.KeyA.pressed && this.playerOffset === 0 && this.player.position.x > 0) {
+            this.player.position.x -= this.speed
+        } else if (this.keys.KeyD.pressed && this.player.sides.right <= this.rightEdge) {
+            this.player.position.x += this.speed
+        } else {
+            if (this.playerOffset === 0 && this.keys.KeyA.pressed) {
+                return
+            }
+
+            if (this.keys.KeyA.pressed || this.keys.KeyD.pressed) {
+                this.keys.KeyA.pressed ? this.playerOffset-- : this.playerOffset++
+
+                this.platforms.forEach((platform) => {
+                    platform.position.x = this.keys.KeyA.pressed
+                        ? platform.position.x + this.speed
+                        : platform.position.x - this.speed
+                })
+
+                this.goombas.forEach((goomba) => {
+                    goomba.position.x = this.keys.KeyA.pressed
+                        ? goomba.position.x + this.speed
+                        : goomba.position.x - this.speed
+                })
+
+                this.particles.forEach((particle) => {
+                    particle.position.x = this.keys.KeyA.pressed
+                        ? particle.position.x + this.speed
+                        : particle.position.x - this.speed
+                })
+
+                this.environment.forEach((item) => {
+                    const coord = item.image.position.x
+                    const speed = item.speed
+
+                    item.image.position.x = this.keys.KeyA.pressed ? coord + speed : coord - speed
+                })
+            }
         }
+    }
 
-        goombas.forEach((goomba) => {
-            if (topCollision(goomba, platform)) {
-                goomba.speed = 0
-                goomba.position.y = platform.position.y - goomba.height
+    private drawPlatforms() {
+        this.platforms.forEach((platform) => {
+            platform.draw(canvas.ctx)
+
+            if (topCollision(this.player, platform, this.player.currentSprite.cropOffset)) {
+                this.player.canJumping = true
+                this.player.falling = 0
+                this.player.position.y = platform.position.y - this.player.height
+            }
+
+            this.goombas.forEach((goomba) => {
+                if (topCollision(goomba, platform)) {
+                    goomba.falling = 0
+                    goomba.position.y = platform.position.y - goomba.height
+                }
+            })
+
+            this.particles.forEach((particle, index) => {
+                if (topCollision(particle, platform)) {
+                    particle.falling = -particle.falling * 0.5
+
+                    if (particle.radius - 0.4 > 0) {
+                        particle.radius -= 0.4
+                    }
+                }
+
+                if (particle.ttl <= 0) {
+                    this.particles.splice(index, 1)
+                }
+            })
+        })
+    }
+
+    private drawGoombas() {
+        this.goombas.forEach((goomba, index) => {
+            goomba.update(canvas.ctx)
+
+            if (topCollision(this.player, goomba, this.player.currentSprite.cropOffset)) {
+                this.player.canJumping = true
+                this.player.jump()
+                this.goombas.splice(index, 1)
+
+                for (let i = 0; i < this.particlesNumber; i++) {
+                    this.particles.push(
+                        new Particle(
+                            { x: goomba.position.x + goomba.width / 2, y: goomba.position.y + goomba.height / 2 },
+                            -5 - (Math.random() - 0.5) * 5,
+                            2 + Math.random()
+                        )
+                    )
+                }
+            }
+
+            if (horizontalCollision(this.player, goomba, this.player.currentSprite.cropOffset)) {
+                setTimeout(() => {
+                    this.init()
+                }, 50)
             }
         })
-    })
+    }
 
-    goombas.forEach((goomba, index) => {
-        goomba.update(canvas.ctx)
+    private drawParticles() {
+        this.particles.forEach((particle) => {
+            particle.update(canvas.ctx)
+        })
+    }
 
-        if (topCollision(player, goomba, player.currentSprite.cropOffset)) {
-            player.canJumping = true
-            player.jump()
+    animate() {
+        canvas.ctx.clearRect(0, 0, canvas.el.width, canvas.el.height)
+        window.requestAnimationFrame(() => this.animate())
+
+        this.player.canJumping = false
+
+        this.environment.forEach((item) => {
+            item.image.draw(canvas.ctx)
+        })
+
+        this.drawPlatforms()
+        this.drawGoombas()
+        this.drawParticles()
+
+        this.player.update(canvas)
+        this.handleScroll()
+
+        if (this.player.position.y > canvas.el.height) {
             setTimeout(() => {
-                goombas.splice(index, 1)
-            }, 100)
-        }
-
-        if (horizontalCollision(player, goomba, player.currentSprite.cropOffset)) {
-            init()
-        }
-    })
-
-    player.update(canvas)
-
-    if (keys.KeyA.pressed && playerOffset === 0 && player.position.x > 0) {
-        player.position.x -= speed
-    } else if (keys.KeyD.pressed && player.sides.right <= rightEdge) {
-        player.position.x += speed
-    } else {
-        if (playerOffset === 0 && keys.KeyA.pressed) {
-            return
-        }
-
-        if (keys.KeyA.pressed || keys.KeyD.pressed) {
-            keys.KeyA.pressed ? playerOffset-- : playerOffset++
-
-            platforms.forEach((platform) => {
-                platform.position.x = keys.KeyA.pressed ? platform.position.x + speed : platform.position.x - speed
-            })
-
-            goombas.forEach((goomba) => {
-                goomba.position.x = keys.KeyA.pressed ? goomba.position.x + speed : goomba.position.x - speed
-            })
-
-            environment.forEach((item) => {
-                const coord = item.image.position.x
-                const speed = item.speed
-
-                item.image.position.x = keys.KeyA.pressed ? coord + speed : coord - speed
-            })
+                this.init()
+            }, 50)
         }
     }
 
-    if (player.position.y > canvas.el.height) {
-        init()
+    handleKeys() {
+        window.addEventListener('keydown', (event) => {
+            switch (event.code) {
+                case 'KeyW':
+                case 'Space':
+                    this.player.jump()
+                    break
+
+                case 'KeyA':
+                    this.player.setCurrentSprite('runLeft')
+                    this.lastDirection = 'runLeft'
+                    this.keys.KeyA.pressed = true
+                    this.keys.KeyD.pressed = false
+                    break
+
+                case 'KeyD':
+                    this.player.setCurrentSprite('runRight')
+                    this.lastDirection = 'runRight'
+                    this.keys.KeyD.pressed = true
+                    this.keys.KeyA.pressed = false
+                    break
+
+                default:
+                    break
+            }
+        })
+
+        window.addEventListener('keyup', (event) => {
+            switch (event.code) {
+                case 'KeyA':
+                    this.player.setCurrentSprite('idleLeft')
+                    this.lastDirection = null
+                    this.keys.KeyA.pressed = false
+                    break
+
+                case 'KeyD':
+                    this.player.setCurrentSprite('idleRight')
+                    this.lastDirection = null
+                    this.keys.KeyD.pressed = false
+                    break
+
+                default:
+                    break
+            }
+        })
     }
 }
 
-function init() {
-    playerOffset = 0
-    player = new Сharacter({ x: 100, y: 100 }, lastDirection)
+const app = new App()
 
-    platforms = [
-        new PlatformSmallTall(Platform.width * 4 - 290),
-        new Platform(0),
-        new Platform(Platform.width),
-        new Platform(Platform.width * 2 + 200),
-        new Platform(Platform.width * 3),
-        new Platform(Platform.width * 5 - 30),
-    ]
-
-    environment = [
-        { image: new ImageObject({ x: -1, y: -1 }, './img/background.png'), speed: 2 },
-        { image: new ImageObject({ x: -1, y: 500 }, './img/background.png'), speed: 2 },
-        { image: new ImageObject({ x: 0, y: canvas.el.height - 580 }, './img/hills.png'), speed: 5 },
-    ]
-
-    goombas = [new Goomba({ x: 1000, y: 200 })]
-}
-
-window.addEventListener('keydown', (event) => {
-    switch (event.code) {
-        case 'KeyW':
-        case 'Space':
-            player.jump()
-            break
-
-        case 'KeyA':
-            player.setCurrentSprite('runLeft')
-            lastDirection = 'runLeft'
-            keys.KeyA.pressed = true
-            keys.KeyD.pressed = false
-            break
-
-        case 'KeyD':
-            player.setCurrentSprite('runRight')
-            lastDirection = 'runRight'
-            keys.KeyD.pressed = true
-            keys.KeyA.pressed = false
-            break
-
-        default:
-            break
-    }
-})
-
-window.addEventListener('keyup', (event) => {
-    switch (event.code) {
-        case 'KeyA':
-            player.setCurrentSprite('idleLeft')
-            lastDirection = null
-            keys.KeyA.pressed = false
-            break
-
-        case 'KeyD':
-            player.setCurrentSprite('idleRight')
-            lastDirection = null
-            keys.KeyD.pressed = false
-            break
-
-        default:
-            break
-    }
-})
-
-init()
-animate()
+app.handleKeys()
+app.init()
+window.requestAnimationFrame(() => app.animate())

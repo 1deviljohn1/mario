@@ -15,6 +15,7 @@ export class Platform {
     get sides() {
         return {
             right: this.position.x + Platform.width,
+            bottom: this.position.y + Platform.height,
         }
     }
 

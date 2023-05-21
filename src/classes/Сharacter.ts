@@ -37,7 +37,7 @@ export class Сharacter {
     }
     private width = 127.875
     height = 150
-    speed = 0
+    falling = 0
     private maxSpeed = 40
     private gravity = 2
     jumpSpeed = 35
@@ -101,14 +101,14 @@ export class Сharacter {
     update(canvas: Canvas) {
         this.draw(canvas)
 
-        this.position.y += this.speed
-        const newSpeed = this.speed + this.gravity
-        this.speed = newSpeed > this.maxSpeed ? this.maxSpeed : newSpeed
+        this.position.y += this.falling
+        const newSpeed = this.falling + this.gravity
+        this.falling = newSpeed > this.maxSpeed ? this.maxSpeed : newSpeed
     }
 
     jump() {
         if (this.canJumping) {
-            this.speed = -this.jumpSpeed
+            this.falling = -this.jumpSpeed
         }
     }
 }
