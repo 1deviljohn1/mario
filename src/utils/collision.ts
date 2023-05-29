@@ -9,11 +9,12 @@ type StaticObject = {
     }
 }
 
-type FallingObject = StaticObject & {
+type MovingObject = StaticObject & {
     falling: number
+    speed: number
 }
 
-export const topCollision = (object: FallingObject, blockObject: StaticObject, objectOffset = 0) => {
+export const topCollision = (object: MovingObject, blockObject: StaticObject, objectOffset = 0) => {
     return (
         object.sides.bottom <= blockObject.position.y &&
         object.sides.bottom + object.falling >= blockObject.position.y &&
@@ -22,10 +23,19 @@ export const topCollision = (object: FallingObject, blockObject: StaticObject, o
     )
 }
 
-export const horizontalCollision = (object: FallingObject, blockObject: StaticObject, objectOffset = 0) => {
+export const bottomCollision = (object: MovingObject, blockObject: StaticObject, objectOffset = 0) => {
     return (
+        object.position.y + object.falling <= blockObject.sides.bottom &&
+        object.position.y - object.falling >= blockObject.sides.bottom &&
         object.sides.right - objectOffset >= blockObject.position.x &&
-        object.position.x + objectOffset <= blockObject.sides.right &&
+        object.position.x + objectOffset <= blockObject.sides.right
+    )
+}
+
+export const horizontalCollision = (object: MovingObject, blockObject: StaticObject, objectOffset = 0) => {
+    return (
+        object.sides.right - objectOffset + object.speed >= blockObject.position.x &&
+        object.position.x + objectOffset + object.speed <= blockObject.sides.right &&
         object.sides.bottom >= blockObject.position.y &&
         object.position.y <= blockObject.sides.bottom
     )

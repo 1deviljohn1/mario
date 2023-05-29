@@ -14,13 +14,13 @@ export class Сharacter {
             src: './img/spriteStandRight.png',
             frames: 60,
             cropWidth: 66,
-            cropOffset: 30,
+            cropOffset: 35,
         },
         idleLeft: {
             src: './img/spriteStandLeft.png',
             frames: 60,
             cropWidth: 66,
-            cropOffset: 30,
+            cropOffset: 35,
         },
         runRight: {
             src: './img/spriteRunRight.png',
@@ -38,6 +38,7 @@ export class Сharacter {
     private width = 127.875
     height = 150
     falling = 0
+    speed = 0
     private maxSpeed = 40
     private gravity = 2
     jumpSpeed = 35
@@ -85,6 +86,8 @@ export class Сharacter {
             this.currentFrame = 0
         }
 
+        canvas.ctx.fillStyle = 'green'
+        canvas.ctx.fillRect(this.position.x, this.position.y, this.width, this.height)
         canvas.ctx.drawImage(
             this.image,
             cropWidth * this.currentFrame,
@@ -101,6 +104,7 @@ export class Сharacter {
     update(canvas: Canvas) {
         this.draw(canvas)
 
+        this.position.x += this.speed
         this.position.y += this.falling
         const newSpeed = this.falling + this.gravity
         this.falling = newSpeed > this.maxSpeed ? this.maxSpeed : newSpeed

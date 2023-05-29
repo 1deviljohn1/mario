@@ -2,7 +2,7 @@ export class Goomba {
     width = 50
     height = 60
     falling = 0
-    private speed = -(1 + Math.random())
+    speed = -(1 + Math.random())
     private gravity = 1
     private maxSpeed = 40
     private image: HTMLImageElement

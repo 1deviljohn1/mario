@@ -2,10 +2,11 @@ import './assets/scss/app.scss'
 import { Canvas } from './classes/Canvas'
 import { Platform } from './classes/Platform'
 import { PlatformSmallTall } from './classes/PlatformSmallTall'
+import { PlatformBlock } from './classes/PlatformBlock'
 import { Сharacter, type SpriteKey } from './classes/Сharacter'
 import { ImageObject } from './classes/ImageObject'
 import { Goomba } from './classes/Goomba'
-import { topCollision, horizontalCollision } from './utils/collision'
+import { topCollision, bottomCollision, horizontalCollision } from './utils/collision'
 import { Particle } from './classes/Particle'
 
 type ImageData = {
@@ -47,6 +48,7 @@ class App {
 
         this.platforms = [
             new PlatformSmallTall(Platform.width * 4 - 90),
+            new PlatformBlock({ x: 800, y: 500 }),
             new Platform(0),
             new Platform(Platform.width),
             new Platform(Platform.width * 2 + 200),
@@ -63,12 +65,38 @@ class App {
         this.goombas = [new Goomba({ x: 2000, y: 200 }, 600), new Goomba({ x: 2450, y: 500 }, 200)]
     }
 
+    animate() {
+        canvas.ctx.clearRect(0, 0, canvas.el.width, canvas.el.height)
+        window.requestAnimationFrame(() => this.animate())
+
+        this.player.canJumping = false
+
+        this.environment.forEach((item) => {
+            item.image.draw(canvas.ctx)
+        })
+
+        this.drawPlatforms()
+        this.drawGoombas()
+        this.drawParticles()
+
+        this.player.update(canvas)
+        this.handleScroll()
+
+        if (this.player.position.y > canvas.el.height) {
+            setTimeout(() => {
+                this.init()
+            }, 50)
+        }
+    }
+
     private handleScroll() {
         if (this.keys.KeyA.pressed && this.playerOffset === 0 && this.player.position.x > 0) {
-            this.player.position.x -= this.speed
+            this.player.speed = -this.speed
         } else if (this.keys.KeyD.pressed && this.player.sides.right <= this.rightEdge) {
-            this.player.position.x += this.speed
+            this.player.speed = this.speed
         } else {
+            this.player.speed = 0
+
             if (this.playerOffset === 0 && this.keys.KeyA.pressed) {
                 return
             }
@@ -111,7 +139,17 @@ class App {
             if (topCollision(this.player, platform, this.player.currentSprite.cropOffset)) {
                 this.player.canJumping = true
                 this.player.falling = 0
-                this.player.position.y = platform.position.y - this.player.height
+                this.player.position.y = platform.position.y - this.player.height - 0.01
+            }
+
+            if (platform instanceof PlatformBlock) {
+                if (bottomCollision(this.player, platform, this.player.currentSprite.cropOffset)) {
+                    this.player.falling = 0
+                }
+
+                if (horizontalCollision(this.player, platform)) {
+                    this.player.speed = 0
+                }
             }
 
             this.goombas.forEach((goomba) => {
@@ -169,30 +207,6 @@ class App {
         this.particles.forEach((particle) => {
             particle.update(canvas.ctx)
         })
-    }
-
-    animate() {
-        canvas.ctx.clearRect(0, 0, canvas.el.width, canvas.el.height)
-        window.requestAnimationFrame(() => this.animate())
-
-        this.player.canJumping = false
-
-        this.environment.forEach((item) => {
-            item.image.draw(canvas.ctx)
-        })
-
-        this.drawPlatforms()
-        this.drawGoombas()
-        this.drawParticles()
-
-        this.player.update(canvas)
-        this.handleScroll()
-
-        if (this.player.position.y > canvas.el.height) {
-            setTimeout(() => {
-                this.init()
-            }, 50)
-        }
     }
 
     handleKeys() {

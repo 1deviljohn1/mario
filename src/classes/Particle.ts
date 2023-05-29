@@ -1,6 +1,6 @@
 export class Particle {
     private gravity = 1
-    private speed = (Math.random() - 0.5) * 2
+    speed = (Math.random() - 0.5) * 2
     ttl = 100
 
     constructor(
